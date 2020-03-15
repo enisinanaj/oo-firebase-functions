@@ -53,8 +53,9 @@ exports.oroscopoGiornaliero = functions.https.onRequest(async (req, res) => {
         console.error(error);
       }
     }
+    res.json(tickets)
     /* eslint-enable no-await-in-loop */
-  })(res.json(tickets));
+  })();
 });
 
 exports.biscottoDellaFortuna = functions.https.onRequest(async (req, res) => {
@@ -108,7 +109,8 @@ exports.biscottoDellaFortuna = functions.https.onRequest(async (req, res) => {
         console.error(error);
       }
     }
-    res.json(tickets);
+    
+    res.json(tickets)
     /* eslint-enable no-await-in-loop */
   })();
 });
