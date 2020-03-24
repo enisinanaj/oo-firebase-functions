@@ -265,3 +265,65 @@ exports.biscottoDellaFortuna = functions.https.onRequest(async (req, res) => {
     /* eslint-enable no-await-in-loop */
   })();
 });
+
+exports.notificaPopup = functions.https.onRequest(async (req, res) => {
+  const utente = req.query.utente.toString();
+
+  const datiUtente = await admin
+    .firestore()
+    .collection("Utenti")
+    .doc(utente)
+    .get()
+    .then(response => {
+      return response.data();
+    });
+
+  const oggi = moment().format("DD/MM");
+  const compleanno = moment(datiUtente.dataDiNascita, "DD/MM/YYYY").format(
+    "DD/MM"
+  );
+  if (compleanno === oggi && datiUtente.compleannoFesteggiato !== true) {
+    await admin
+      .firestore()
+      .collection("Utenti")
+      .doc(utente)
+      .update({ compleannoFesteggiato: true });
+
+    res.json({
+      tipologia: "compleanno",
+      titolo: "Buon compleanno!",
+      descrizione: "Ciao, " + datiUtente.nome + ", tanti auguri!",
+      testoBottone: "Festeggia!",
+      urlImmagine:
+        "https://www.oetker.co.uk/Recipe/Recipes/oetker.co.uk/uk-en/baking/image-thumb__3337__RecipeDetailsLightBox/sprinkles-birthday-cake.jpg"
+    });
+  } else {
+    if (compleanno !== oggi) {
+      await admin
+        .firestore()
+        .collection("Utenti")
+        .doc(utente)
+        .update({ compleannoFesteggiato: false });
+    }
+
+    const popup = await admin
+      .firestore()
+      .collection("Popup")
+      .doc("Messaggio")
+      .get()
+      .then(response => {
+        let popup = response.data();
+        popup.titolo = popup.titolo
+          .replace(/NOME/g, datiUtente.nome)
+          .replace(/SEGNO/g, datiUtente.segno);
+        popup.descrizione = popup.descrizione
+          .replace(/NOME/g, datiUtente.nome)
+          .replace(/SEGNO/g, datiUtente.segno);
+        return popup;
+      });
+    res.json(popup);
+  }
+  //res.json(datiUtente);
+
+  /* eslint-enable no-await-in-loop */
+});
