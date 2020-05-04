@@ -72,9 +72,9 @@ exports.oroscopoSettimanale = functions.https.onRequest(async (req, res) => {
             to: doc.data().notificationToken,
             sound: "default",
             body:
-              "Ciao " +
+              "Ei " +
               doc.data().nome +
-              "! Non hai ancora letto il tuo oroscopo di questa settimana, che aspetti? ⏳",
+              ", scopri il nuovo oroscopo settimanale! Cosa ti aspetterà la prossima settimana? 🤨",
             data: { tipologia: "settimanale" },
             channelId: "Settimanale"
           });
