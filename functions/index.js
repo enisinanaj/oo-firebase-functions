@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const moment = require("moment");
 const admin = require("firebase-admin");
 const { Expo } = require("expo-server-sdk");
+const FieldValue = require("firebase-admin").firestore.FieldValue;
 admin.initializeApp();
 let expo = new Expo();
 
@@ -76,7 +77,7 @@ exports.oroscopoGiornaliero = functions
       await admin
         .firestore()
         .collection("TokenDaCancellare")
-        .doc(moment())
+        .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
       res.json(tickets);
@@ -149,7 +150,7 @@ exports.oroscopoSettimanale = functions
       await admin
         .firestore()
         .collection("TokenDaCancellare")
-        .doc(moment())
+        .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
       res.json(tickets);
@@ -221,7 +222,7 @@ exports.oroscopoMensile = functions
       await admin
         .firestore()
         .collection("TokenDaCancellare")
-        .doc(moment())
+        .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
       res.json(tickets);
@@ -351,7 +352,7 @@ exports.biscottoDellaFortuna = functions
       await admin
         .firestore()
         .collection("TokenDaCancellare")
-        .doc(moment())
+        .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
       res.json(tickets);
@@ -549,3 +550,55 @@ exports.contaEmailVuote = functions.https.onRequest(async (req, res) => {
   res.json(utentiVuoti);
   /* eslint-enable no-await-in-loop */
 });
+
+exports.cancellaTokenInutilizzabili = functions
+  .runWith({ timeoutSeconds: 540 })
+  .https.onRequest(async (req, res) => {
+    let listaToken = [];
+    await admin
+      .firestore()
+      .collection("TokenDaCancellare")
+      .doc("ListaAttuale")
+      .get()
+      .then((response) => (listaToken = response.data().arrayToken));
+
+    let utenti = [];
+    /* eslint-disable no-await-in-loop */
+    /* eslint-disable no-loop-func */
+
+    for (let token of listaToken) {
+      try {
+        let idDaModificare;
+        await admin
+          .firestore()
+          .collection("Utenti")
+          .where("notificationToken", "==", token)
+          .get()
+          .then((response) =>
+            response.forEach((doc) => {
+              utenti.push(doc.data());
+              idDaModificare = doc.id;
+            })
+          );
+        await admin
+          .firestore()
+          .collection("Utenti")
+          .doc(idDaModificare)
+          .update({ notificationToken: null });
+
+        await admin
+          .firestore()
+          .collection("TokenDaCancellare")
+          .doc("ListaAttuale")
+          .update({
+            arrayToken: FieldValue.arrayRemove(token),
+          });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    res.json(utenti);
+    /* eslint-enable no-loop-func */
+    /* eslint-enable no-await-in-loop */
+  });
