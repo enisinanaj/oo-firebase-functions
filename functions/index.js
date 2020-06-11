@@ -230,56 +230,78 @@ exports.oroscopoMensile = functions
     })();
   });
 
-exports.nuovaRubrica = functions.https.onRequest(async (req, res) => {
-  const segno = req.query.segno.toString();
-  const titolo = req.query.titolo.toString();
-  const slug = req.query.slug.toString();
-  let messages = [];
-  await admin
-    .firestore()
-    .collection("Utenti")
-    .where("segno", "==", segno)
-    .where("notificationToken", ">", "")
-    .get()
-    .then((response) =>
-      response.forEach((doc) => {
-        if (Expo.isExpoPushToken(doc.data().notificationToken)) {
-          messages.push({
-            to: doc.data().notificationToken,
-            sound: "default",
-            body: titolo,
-            data: { tipologia: "rubrica", slug: slug },
-            channelId: "Rubrica",
-          });
-        }
-      })
-    );
-  // MANDO LE NOTIFICHE
+exports.nuovaRubrica = functions
+  .runWith({ timeoutSeconds: 540 })
+  .https.onRequest(async (req, res) => {
+    const segno = req.query.segno.toString();
+    const titolo = req.query.titolo.toString();
+    const slug = req.query.slug.toString();
+    let messages = [];
+    await admin
+      .firestore()
+      .collection("Utenti")
+      .where("segno", "==", segno)
+      .where("notificationToken", ">", "")
+      .get()
+      .then((response) =>
+        response.forEach((doc) => {
+          if (Expo.isExpoPushToken(doc.data().notificationToken)) {
+            messages.push({
+              to: doc.data().notificationToken,
+              sound: "default",
+              body: titolo,
+              data: { tipologia: "rubrica", slug: slug },
+              channelId: "Rubrica",
+            });
+          }
+        })
+      );
+    // MANDO LE NOTIFICHE
 
-  let chunks = expo.chunkPushNotifications(messages);
-  let tickets = [];
-  (async () => {
-    // Send the chunks to the Expo push notification service. There are
-    // different strategies you could use. A simple one is to send one chunk at a
-    // time, which nicely spreads the load out over time:
-    /* eslint-disable no-await-in-loop */
-    for (let chunk of chunks) {
-      try {
-        let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-        console.log(ticketChunk);
-        tickets.push(...ticketChunk);
-        // NOTE: If a ticket contains an error code in ticket.details.error, you
-        // must handle it appropriately. The error codes are listed in the Expo
-        // documentation:
-        // https://docs.expo.io/versions/latest/guides/push-notifications#response-format
-      } catch (error) {
-        console.error(error);
+    let chunks = expo.chunkPushNotifications(messages);
+    let daCancellare = [];
+    let tickets = [];
+    (async () => {
+      // Send the chunks to the Expo push notification service. There are
+      // different strategies you could use. A simple one is to send one chunk at a
+      // time, which nicely spreads the load out over time:
+      /* eslint-disable no-await-in-loop */
+      for (let chunk of chunks) {
+        try {
+          let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+          console.log(ticketChunk);
+
+          for (
+            let ticketIndex = 0;
+            ticketIndex < ticketChunk.length;
+            ticketIndex++
+          ) {
+            if (ticketChunk[ticketIndex].status === "error") {
+              if (
+                ticketChunk[ticketIndex].details.error === "DeviceNotRegistered"
+              )
+                daCancellare.push(chunk[ticketIndex].to);
+            }
+          }
+          tickets.push(...ticketChunk);
+          // NOTE: If a ticket contains an error code in ticket.details.error, you
+          // must handle it appropriately. The error codes are listed in the Expo
+          // documentation:
+          // https://docs.expo.io/versions/latest/guides/push-notifications#response-format
+        } catch (error) {
+          console.error(error);
+        }
       }
-    }
-    res.json(tickets);
-    /* eslint-enable no-await-in-loop */
-  })();
-});
+      await admin
+        .firestore()
+        .collection("TokenDaCancellare")
+        .doc("ListaAttuale")
+        .set({ arrayToken: daCancellare });
+
+      res.json(tickets);
+      /* eslint-enable no-await-in-loop */
+    })();
+  });
 
 exports.biscottoDellaFortuna = functions
   .runWith({ timeoutSeconds: 540 })
