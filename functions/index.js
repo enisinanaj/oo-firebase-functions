@@ -7,7 +7,7 @@ admin.initializeApp();
 let expo = new Expo();
 
 exports.oroscopoGiornaliero = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ memory: "512MB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
     let messages = [];
     await admin
@@ -86,7 +86,7 @@ exports.oroscopoGiornaliero = functions
   });
 
 exports.oroscopoSettimanale = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ memory: "512MB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
     let messages = [];
     await admin
@@ -159,7 +159,7 @@ exports.oroscopoSettimanale = functions
   });
 
 exports.oroscopoMensile = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ memory: "512MB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
     let messages = [];
     await admin
@@ -231,7 +231,7 @@ exports.oroscopoMensile = functions
   });
 
 exports.nuovaRubrica = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ memory: "512MB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
     const segno = req.query.segno.toString();
     const titolo = req.query.titolo.toString();
@@ -304,7 +304,7 @@ exports.nuovaRubrica = functions
   });
 
 exports.biscottoDellaFortuna = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ memory: "512MB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
     let messages = [];
     await admin
@@ -574,7 +574,7 @@ exports.contaEmailVuote = functions.https.onRequest(async (req, res) => {
 });
 
 exports.cancellaTokenInutilizzabili = functions
-  .runWith({ timeoutSeconds: 540 })
+  .runWith({ memory: "512MB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
     let listaToken = [];
     await admin
