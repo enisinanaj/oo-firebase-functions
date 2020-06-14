@@ -575,42 +575,51 @@ exports.contaEmailVuote = functions.https.onRequest(async (req, res) => {
 });
 
 exports.deleteOldMessages = functions
-  .runWith({ memory: "512MB", timeoutSeconds: 540 })
+  .runWith({ memory: "1GB", timeoutSeconds: 540 })
   .https.onRequest(async (req, res) => {
+    var earlierThan = new Date();
+    earlierThan.setTime(earlierThan.getTime() - 1 * 60 * 60 * 1000);
 
-    var earlierThan = new Date()
-    earlierThan.setTime(earlierThan.getTime() - (1 * 60 * 60 * 1000))
-
-    admin.firestore().collection("Messages")
-      //.where("createdAt.seconds", "<=", (earlierThan / 1000))
+    let cancellati = [];
+    await admin
+      .firestore()
+      .collection("Messages")
       .get()
       .then((snapshot) => {
-        console.warn("snapshot size: " + snapshot.size)
+        console.warn("snapshot size: " + snapshot.size);
 
         // When there are no documents left, we are done
         if (snapshot.size === 0) {
           return 0;
         }
-  
+
         // Delete documents in a batch
-        let batch = admin.firestore().batch();
         snapshot.docs.forEach((doc) => {
-          console.warn("considering: " + doc.id)
+          //console.warn("considering: " + doc.id);
           if (doc.createTime.toDate().getTime() <= earlierThan.getTime()) {
-            console.warn("to delete: " + doc.id)
-            batch.delete(doc.ref);
+            //console.warn("to delete: " + doc.id);
+            //batch.delete(doc.ref);
+            cancellati.push({
+              //ref: doc.ref,
+              mex: doc.data().createdAt,
+            });
+            doc.ref.delete();
           }
         });
-  
-        return batch.commit()
-      }).then((result) => {
-        console.warn("deleted: " + result.size)
+
+        return cancellati;
+        //return batch.commit();
+      })
+      .then((result) => {
+        // console.warn("deleted: " + result.size);
         return result.size;
       })
-      .catch((error) => {console.error(error)});
+      .catch((error) => {
+        console.error(error);
+      });
 
-      res.json({success: true});
-  })
+    res.json({ cancellati });
+  });
 
 exports.cancellaTokenInutilizzabili = functions
   .runWith({ memory: "512MB", timeoutSeconds: 540 })
