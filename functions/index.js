@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const moment = require("moment");
 const admin = require("firebase-admin");
 const { Expo } = require("expo-server-sdk");
+const { firebaseConfig } = require("firebase-functions");
 const FieldValue = require("firebase-admin").firestore.FieldValue;
 admin.initializeApp();
 let expo = new Expo();
@@ -572,6 +573,53 @@ exports.contaEmailVuote = functions.https.onRequest(async (req, res) => {
   res.json(utentiVuoti);
   /* eslint-enable no-await-in-loop */
 });
+
+exports.deleteOldMessages = functions
+  .runWith({ memory: "1GB", timeoutSeconds: 540 })
+  .https.onRequest(async (req, res) => {
+    var earlierThan = new Date();
+    earlierThan.setTime(earlierThan.getTime() - 1 * 60 * 60 * 1000);
+
+    let cancellati = [];
+    await admin
+      .firestore()
+      .collection("Messages")
+      .get()
+      .then((snapshot) => {
+        console.warn("snapshot size: " + snapshot.size);
+
+        // When there are no documents left, we are done
+        if (snapshot.size === 0) {
+          return 0;
+        }
+
+        // Delete documents in a batch
+        snapshot.docs.forEach((doc) => {
+          //console.warn("considering: " + doc.id);
+          if (doc.createTime.toDate().getTime() <= earlierThan.getTime()) {
+            //console.warn("to delete: " + doc.id);
+            //batch.delete(doc.ref);
+            cancellati.push({
+              //ref: doc.ref,
+              mex: doc.data().createdAt,
+            });
+            doc.ref.delete();
+          }
+        });
+
+        return cancellati;
+        //return batch.commit();
+      })
+      .then((result) => {
+        // console.warn("deleted: " + result.size);
+        return result.size;
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+
+    res.json({ cancellati });
+  });
 
 exports.cancellaTokenInutilizzabili = functions
   .runWith({ memory: "512MB", timeoutSeconds: 540 })
