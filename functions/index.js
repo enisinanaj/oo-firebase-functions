@@ -81,7 +81,7 @@ exports.oroscopoGiornaliero = functions
         .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
-      res.json(tickets);
+      res.json(true);
       /* eslint-enable no-await-in-loop */
     })();
   });
@@ -154,7 +154,7 @@ exports.oroscopoSettimanale = functions
         .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
-      res.json(tickets);
+      res.json(true);
       /* eslint-enable no-await-in-loop */
     })();
   });
@@ -299,7 +299,7 @@ exports.nuovaRubrica = functions
         .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
-      res.json(tickets);
+      res.json(true);
       /* eslint-enable no-await-in-loop */
     })();
   });
@@ -378,7 +378,7 @@ exports.biscottoDellaFortuna = functions
         .doc("ListaAttuale")
         .set({ arrayToken: daCancellare });
 
-      res.json(tickets);
+      res.json(true);
       /* eslint-enable no-await-in-loop */
     })();
   });
@@ -668,7 +668,7 @@ exports.cancellaTokenInutilizzabili = functions
       }
     }
 
-    res.json(utenti);
+    res.json(true);
     /* eslint-enable no-loop-func */
     /* eslint-enable no-await-in-loop */
   });
